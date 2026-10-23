@@ -102,13 +102,21 @@ def obtener_cliente_gspread():
         "https://www.googleapis.com/auth/spreadsheets.readonly",
         "https://www.googleapis.com/auth/drive.readonly",
     ]
-    if not os.path.exists(CRED_PATH):
-        raise FileNotFoundError(
-            f"No se encontró el archivo 'credentials.json' en: {CRED_PATH}"
+    # 1. En la nube: lee la configuración desde los Secrets de Streamlit
+    if "gcp_service_account" in st.secrets:
+        credenciales = Credentials.from_service_account_info(
+            st.secrets["gcp_service_account"], scopes=scope
         )
-    credenciales = Credentials.from_service_account_file(
-        CRED_PATH, scopes=scope
-    )
+    # 2. En local: busca el archivo credentials.json
+    elif os.path.exists(CRED_PATH):
+        credenciales = Credentials.from_service_account_file(
+            CRED_PATH, scopes=scope
+        )
+    else:
+        raise FileNotFoundError(
+            "No se encontraron credenciales ni en st.secrets ni en credentials.json"
+        )
+
     return gspread.authorize(credenciales)
 
 
