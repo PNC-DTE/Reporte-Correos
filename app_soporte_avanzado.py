@@ -404,10 +404,10 @@ tab_general, tab_ejes, tab_asuntos, tab_informe, tab_datos = st.tabs([
 with tab_general:
     col_g1, col_g2 = st.columns([1.2, 0.88])
 
-    with col_g1:
+with col_g1:
         st.subheader("Distribución por Ejes Temáticos")
         if "Eje Temático Sugerido" in df.columns:
-            df_ejes = df["Eje Temático Sugerido"].value_counts().reset_index()
+            df_ejes = df["Eje Temático Sugerido"].replace("", "Sin Clasificar").value_counts().reset_index()
             df_ejes.columns = ["Eje Temático", "Cantidad"]
             total_sum = df_ejes["Cantidad"].sum()
             df_ejes["Porcentaje"] = (df_ejes["Cantidad"] / total_sum * 100).round(1)
@@ -415,6 +415,18 @@ with tab_general:
                 lambda r: f" {r['Cantidad']:,} ({r['Porcentaje']}%) ", axis=1
             )
             df_ejes = df_ejes.sort_values(by="Cantidad", ascending=True)
+
+            # Selector para calibrar la escala visual según la necesidad
+            c_graf_title, c_escala = st.columns([1.8, 1.2])
+            with c_escala:
+                tipo_escala = st.radio(
+                    "Modo de Escala:",
+                    ["Normal (Lineal)", "Ajustada (Logarítmica)"],
+                    horizontal=True,
+                    index=0,
+                    help="La escala logarítmica permite que las áreas con menos mensajes no se vean aplastadas respecto a Moodle."
+                )
+            usar_log = (tipo_escala == "Ajustada (Logarítmica)")
 
             fig_ejes = px.bar(
                 df_ejes,
@@ -430,6 +442,7 @@ with tab_general:
                     "#ff8540",
                     "#ff682c",
                 ],
+                log_x=usar_log
             )
             fig_ejes.update_traces(
                 textposition="outside",
@@ -441,14 +454,21 @@ with tab_general:
                 ),
             )
             fig_ejes.update_layout(
-                xaxis_title="Cantidad de Mensajes",
+                xaxis_title="Cantidad de Mensajes" + (" [Escala Logarítmica]" if usar_log else " [Escala Lineal]"),
                 yaxis_title="",
                 coloraxis_showscale=False,
                 margin=dict(l=10, r=100, t=10, b=20),
                 height=380,
-                xaxis=dict(showgrid=True, gridcolor="rgba(255,255,255,0.08)"),
+                xaxis=dict(
+                    showgrid=True, 
+                    gridcolor="rgba(255,255,255,0.08)",
+                    # Si es logarítmica, formatea las marcas para que no se superpongan
+                    dtick=1 if usar_log else None
+                ),
             )
             st.plotly_chart(fig_ejes, width="stretch")
+
+    
 
     with col_g2:
         st.subheader("Distribución por Franja Horaria")
