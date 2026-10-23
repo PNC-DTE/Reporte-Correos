@@ -404,19 +404,31 @@ tab_general, tab_ejes, tab_asuntos, tab_informe, tab_datos = st.tabs([
 with tab_general:
     col_g1, col_g2 = st.columns([1.2, 0.88])
 
-with col_g1:
+# ==========================================
+# SOLAPA 1: VISIÓN GENERAL
+# ==========================================
+with tab_general:
+    col_g1, col_g2 = st.columns([1.2, 0.88])
+
+    with col_g1:
         st.subheader("Distribución por Ejes Temáticos")
         if "Eje Temático Sugerido" in df.columns:
-            df_ejes = df["Eje Temático Sugerido"].replace("", "Sin Clasificar").value_counts().reset_index()
+            df_ejes = (
+                df["Eje Temático Sugerido"]
+                .replace("", "Sin Clasificar")
+                .value_counts()
+                .reset_index()
+            )
             df_ejes.columns = ["Eje Temático", "Cantidad"]
             total_sum = df_ejes["Cantidad"].sum()
-            df_ejes["Porcentaje"] = (df_ejes["Cantidad"] / total_sum * 100).round(1)
+            df_ejes["Porcentaje"] = (
+                df_ejes["Cantidad"] / total_sum * 100
+            ).round(1)
             df_ejes["Etiqueta"] = df_ejes.apply(
                 lambda r: f" {r['Cantidad']:,} ({r['Porcentaje']}%) ", axis=1
             )
             df_ejes = df_ejes.sort_values(by="Cantidad", ascending=True)
 
-            # Selector para calibrar la escala visual según la necesidad
             c_graf_title, c_escala = st.columns([1.8, 1.2])
             with c_escala:
                 tipo_escala = st.radio(
@@ -424,9 +436,9 @@ with col_g1:
                     ["Normal (Lineal)", "Ajustada (Logarítmica)"],
                     horizontal=True,
                     index=0,
-                    help="La escala logarítmica permite que las áreas con menos mensajes no se vean aplastadas respecto a Moodle."
+                    help="La escala logarítmica permite que las áreas con menos mensajes no se vean aplastadas respecto a Moodle.",
                 )
-            usar_log = (tipo_escala == "Ajustada (Logarítmica)")
+            usar_log = tipo_escala == "Ajustada (Logarítmica)"
 
             fig_ejes = px.bar(
                 df_ejes,
@@ -442,7 +454,7 @@ with col_g1:
                     "#ff8540",
                     "#ff682c",
                 ],
-                log_x=usar_log
+                log_x=usar_log,
             )
             fig_ejes.update_traces(
                 textposition="outside",
@@ -454,26 +466,34 @@ with col_g1:
                 ),
             )
             fig_ejes.update_layout(
-                xaxis_title="Cantidad de Mensajes" + (" [Escala Logarítmica]" if usar_log else " [Escala Lineal]"),
+                xaxis_title=(
+                    "Cantidad de Mensajes"
+                    + (
+                        " [Escala Logarítmica]"
+                        if usar_log
+                        else " [Escala Lineal]"
+                    )
+                ),
                 yaxis_title="",
                 coloraxis_showscale=False,
                 margin=dict(l=10, r=100, t=10, b=20),
                 height=380,
                 xaxis=dict(
-                    showgrid=True, 
+                    showgrid=True,
                     gridcolor="rgba(255,255,255,0.08)",
-                    # Si es logarítmica, formatea las marcas para que no se superpongan
-                    dtick=1 if usar_log else None
+                    dtick=1 if usar_log else None,
                 ),
             )
             st.plotly_chart(fig_ejes, width="stretch")
-
-    
+        else:
+            st.info("No se encontró la columna 'Eje Temático Sugerido'.")
 
     with col_g2:
         st.subheader("Distribución por Franja Horaria")
         if "Franja Horaria (8 a 14 hs)" in df.columns:
-            df_franja = df["Franja Horaria (8 a 14 hs)"].value_counts().reset_index()
+            df_franja = (
+                df["Franja Horaria (8 a 14 hs)"].value_counts().reset_index()
+            )
             df_franja.columns = ["Franja", "Cantidad"]
 
             fig_franja = go.Figure(
@@ -506,7 +526,11 @@ with col_g1:
                     y=0.5,
                     xanchor="left",
                     x=1.02,
-                    font=dict(size=12, color="#cbd5e1", family="Public Sans, sans-serif"),
+                    font=dict(
+                        size=12,
+                        color="#cbd5e1",
+                        family="Public Sans, sans-serif",
+                    ),
                 ),
                 margin=dict(l=10, r=10, t=10, b=20),
                 height=380,
@@ -518,7 +542,9 @@ with col_g1:
     st.subheader("Demanda Horaria: DTE vs Soporte Campus")
     col_hora = next((c for c in df.columns if "hora (0-23)" in c.lower()), None)
     if col_hora:
-        df_hora = df.groupby([col_hora, "Origen"]).size().reset_index(name="Mensajes")
+        df_hora = (
+            df.groupby([col_hora, "Origen"]).size().reset_index(name="Mensajes")
+        )
         fig_hora = px.line(
             df_hora,
             x=col_hora,
@@ -535,11 +561,12 @@ with col_g1:
         fig_hora.update_yaxes(gridcolor="rgba(255,255,255,0.06)")
         fig_hora.update_layout(
             margin=dict(l=10, r=20, t=10, b=20),
-            legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1),
+            legend=dict(
+                orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1
+            ),
             height=330,
         )
         st.plotly_chart(fig_hora, width="stretch")
-
 
 # ==========================================
 # SOLAPA 2: DESGLOSE POR EJES
